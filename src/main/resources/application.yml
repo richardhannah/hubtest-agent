@@ -1,0 +1,13 @@
+spring:
+    application:
+        name: hubtest-agent
+    datasource:
+        driverClassName: com.mysql.jdbc.Driver
+        url: jdbc:mysql://hubtest.cuz9hkl06zvn.eu-west-1.rds.amazonaws.com:3306
+        username: inthub
+        password: inthubsbox
+server:
+    port: 15000
+
+logging:
+    config: /himex/conf/hubtest-agent/log4j2.xml

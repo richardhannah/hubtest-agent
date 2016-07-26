@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" packages="com.himexubi.serviceprovision.utility.appender">
+    <Appenders>
+
+            <Console name="console" target="SYSTEM_OUT">
+                <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level [%t] %logger{36} - %msg%n"/>
+            </Console>
+
+
+
+        <RollingFile name="RollingFile" fileName="logs/application.log" filePattern="logs/application-%d{yyyyMMdd}-%i.zip">
+            <PatternLayout pattern="[%d{ISO8601}] %-5level [%t] %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+            </Policies>
+        </RollingFile>
+    </Appenders>
+    <Loggers>
+        <logger name="com.richard" level="info"/>
+        <logger name="org.springframework" level="info"/>
+        <logger name="org.springframework.amqp" level="info" />
+        <logger name="org.springframework.ws.client.MessageTracing" level="trace"/>
+        <logger name="org.springframework.jdbc" level="info" />
+        <logger name="org.springframework.jdbc.core.JdbcTemplate" level="error"/>
+        <logger name="org.springframework.web" level="debug"/>
+        <logger name="org.springframework.boot" level="error"/>
+        <logger name="com.fasterxml" level="info" />
+        <Root level="error">
+            <AppenderRef ref="console" />
+        </Root>
+    </Loggers>
+</Configuration>

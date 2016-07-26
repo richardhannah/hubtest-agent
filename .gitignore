@@ -9,4 +9,5 @@ buildNumber.properties
 .mvn/timing.properties
 hubtest-agent.iml
 .idea
+logs/
 
