@@ -19,13 +19,8 @@ import java.util.Arrays;
 @SpringBootApplication
 public class Application {
 
-    private static Logger LOGGER = LogManager.getLogger(Application.class);
-
-    @Autowired
-    static NamedParameterJdbcTemplate jdbcInternalTemplate;
-
     public static void main(String[] args) {
-        ApplicationContext ctx = SpringApplication.run(Application.class, args);
+        ApplicationContext context = SpringApplication.run(Application.class, args);
 
 
     }
