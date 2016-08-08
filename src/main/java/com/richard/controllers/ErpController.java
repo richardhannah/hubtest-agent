@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.richard.models.batchprocess.BatchResponse;
 import com.richard.models.batchprocess.BatchTransaction;
+import com.richard.models.batchprocess.TermsAndRegAcceptance;
 import com.richard.services.BatchResponder;
+import com.richard.services.OrderFulfiller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,13 @@ public class ErpController {
     @Autowired
     BatchResponder batchResponder;
 
+    @Autowired
+    OrderFulfiller orderFulfiller;
+
+    @Autowired
+    NamedParameterJdbcTemplate jdbcInternalTemplate;
+
+
 
     @RequestMapping("/hello")
     public String index() {
@@ -50,7 +59,6 @@ public class ErpController {
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        String json = "";
         try {
             LOGGER.trace("Request Recieved : "+objectMapper.writeValueAsString(requestBody));
         } catch (Exception ex) {
@@ -61,13 +69,41 @@ public class ErpController {
             case 81:
                 List<BatchTransaction> batchTransactions = new ArrayList<>();
                 try {
-                    json = objectMapper.writeValueAsString(requestBody);
+                    String json = objectMapper.writeValueAsString(requestBody);
                     batchTransactions = objectMapper.readValue(json,new TypeReference<List<BatchTransaction>>(){});
                 } catch (Exception ex) {
                     LOGGER.error("Failed to Deserialize object");
                 }
 
             batchResponder.ProduceBatchResponse(batchTransactions);
+            break;
+            case 54:
+                TermsAndRegAcceptance termsAndRegAcceptance = new TermsAndRegAcceptance();
+                try {
+                    String json = objectMapper.writeValueAsString(requestBody);
+                    termsAndRegAcceptance = objectMapper.readValue(json,TermsAndRegAcceptance.class);
+                } catch (Exception ex) {
+                    LOGGER.error("Failed to Deserialize object");
+                }
+
+                if(termsAndRegAcceptance.getAccepted_tcs() != null){
+                    LOGGER.trace("terms and conditions accepted");
+                    jdbcInternalTemplate.update("UPDATE hubtest_agent.account SET terms_accepted=1 WHERE id=:id", new MapSqlParameterSource().addValue("id", termsAndRegAcceptance.getCustomer_id()));
+                }
+
+                if(termsAndRegAcceptance.getFirst_registered() !=null){
+                    LOGGER.trace("registered");
+                    jdbcInternalTemplate.update("UPDATE hubtest_agent.account SET registered=1 WHERE id=:id", new MapSqlParameterSource().addValue("id", termsAndRegAcceptance.getCustomer_id()));
+                }
+
+                if(checkAcceptance(termsAndRegAcceptance)){
+                    LOGGER.trace("both accepted - generating order");
+                    orderFulfiller.produceOrder(Integer.valueOf(termsAndRegAcceptance.getCustomer_id()));
+
+                }
+
+
+
             break;
 
         }
@@ -76,6 +112,16 @@ public class ErpController {
 
         return new ResponseEntity<Void>(HttpStatus.OK);
 
+    }
+
+    private boolean checkAcceptance(TermsAndRegAcceptance termsAndRegAcceptance){
+
+        List<Map<String,Object>> rows = jdbcInternalTemplate.queryForList("SELECT * FROM hubtest_agent.account WHERE id=:id", new MapSqlParameterSource().addValue("id", termsAndRegAcceptance.getCustomer_id()));
+        boolean bothAccepted = false;
+        for(Map row : rows){
+            bothAccepted = (Boolean)row.get("registered") && (Boolean)row.get("terms_accepted");
+        }
+        return bothAccepted;
     }
 
 
