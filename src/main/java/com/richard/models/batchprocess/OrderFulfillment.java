@@ -23,9 +23,13 @@ public class OrderFulfillment {
     private String action;
     private String carrier_program;
 
+    private BatchTransaction batchTransaction;
+
+
     public OrderFulfillment() {}
 
     public OrderFulfillment(BatchTransaction batchTransaction){
+        this.batchTransaction =batchTransaction;
         this.fake = true;
         this.env = "SB2";
         this.orderNo = "";
@@ -64,6 +68,10 @@ public class OrderFulfillment {
         this.shipVia = of.shipVia;
         this.action = of.action;
         this.vehicles = vehicles;
+    }
+
+    public BatchTransaction getBatchTransaction(){
+        return this.batchTransaction;
     }
 
     public String getSoldToCountry() {

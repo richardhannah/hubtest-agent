@@ -301,32 +301,7 @@ public class BatchTransaction {
         String state;
         String zip;
         String email;
-/*
-        @JsonCreator
-        public Contact(
-                @JsonProperty("primary_contact") String primary_contact,
-                @JsonProperty("last_name") String last_name,
-                @JsonProperty("first_name") String first_name,
-                @JsonProperty("main_phone") String main_phone,
-                @JsonProperty("addr1") String addr1,
-                @JsonProperty("addr2") String addr2,
-                @JsonProperty("city") String city,
-                @JsonProperty("state") String state,
-                @JsonProperty("zip") String zip,
-                @JsonProperty("email") String email){
 
-            this.primary_contact=primary_contact;
-            this.last_name=last_name;
-            this.first_name=first_name;
-            this.main_phone=main_phone;
-            this.addr1=addr1;
-            this.addr2=addr2;
-            this.city=city;
-            this.state=state;
-            this.zip=zip;
-            this.email=email;
-        }
-*/
         public String getPrimary_contact() {
             return primary_contact;
         }
@@ -413,18 +388,29 @@ public class BatchTransaction {
         String trans_effect_date;
         String account_no;
 
-
-        @JsonCreator
-        public Customer(@JsonProperty("alias") String alias,
-                        @JsonProperty("trans_effect_date") String trans_effect_date,
-                        @JsonProperty("account_no") String account_no){
-
-            this.alias=alias;
-            this.trans_effect_date=trans_effect_date;
-            this.account_no=account_no;
-
+        public String getAlias() {
+            return alias;
         }
 
+        public void setAlias(String alias) {
+            this.alias = alias;
+        }
+
+        public String getTrans_effect_date() {
+            return trans_effect_date;
+        }
+
+        public void setTrans_effect_date(String trans_effect_date) {
+            this.trans_effect_date = trans_effect_date;
+        }
+
+        public String getAccount_no() {
+            return account_no;
+        }
+
+        public void setAccount_no(String account_no) {
+            this.account_no = account_no;
+        }
     }
 
 }

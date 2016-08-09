@@ -7,9 +7,12 @@ import com.richard.models.batchprocess.BatchResponse;
 import com.richard.models.batchprocess.BatchTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import com.richard.utils.Thread;
@@ -29,6 +32,7 @@ public class BatchResponseRunnable implements Runnable {
 
 
     private static Logger LOGGER = LogManager.getLogger(BatchResponseRunnable.class);
+    private @Value("${inthub.url}")String inthubUrl;
 
     RestTemplate inthubRestTemplate;
     NamedParameterJdbcTemplate jdbcInternalTemplate;
@@ -160,15 +164,32 @@ public class BatchResponseRunnable implements Runnable {
     }
 
     private void persistBatch(){
-        String json = "";
-        try {
-            json = mapper.writeValueAsString(batchTransactions);
-        } catch (Exception ex) {
-            LOGGER.error("Failed to Deserialize object");
+
+        for(BatchTransaction batchTransaction : batchTransactions){
+
+            String json = "";
+            try{
+                json = mapper.writeValueAsString(batchTransaction);
+            }
+            catch (Exception ex){
+                LOGGER.error("failed to serialise", ex);
+            }
+
+            MapSqlParameterSource accountParams = new MapSqlParameterSource();
+            accountParams.addValue("json",json);
+            accountParams.addValue("carrier_account_no",batchTransaction.getCustomer().getAccount_no());
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+            jdbcInternalTemplate.update("INSERT into hubtest_agent.account (raw,carrier_account_no) values (:json,:carrier_account_no)", accountParams,keyHolder);
+            LOGGER.trace("new netsuite id generated : " + keyHolder.getKey());
+            MapSqlParameterSource vehParams = new MapSqlParameterSource();
+            vehParams.addValue("json",json);
+            vehParams.addValue("account_id",keyHolder.getKey());
+            jdbcInternalTemplate.update("INSERT into hubtest_agent.vehicle (raw,account_id) values (:json,:account_id)", vehParams);
+
         }
 
-        jdbcInternalTemplate.update("INSERT into hubtest_agent.account (raw) values (:json)", new MapSqlParameterSource().addValue("json", json));
-        jdbcInternalTemplate.update("INSERT into hubtest_agent.vehicle (raw) values (:json)", new MapSqlParameterSource().addValue("json", json));
+
+
     }
 
 
