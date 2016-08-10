@@ -86,45 +86,29 @@ public class ErpController {
                     LOGGER.error("Failed to Deserialize object");
                 }
 
-                /*
                 if(termsAndRegAcceptance.getAccepted_tcs() != null){
                     LOGGER.trace("terms and conditions accepted");
-                    jdbcInternalTemplate.update("UPDATE hubtest_agent.account SET terms_accepted=1 WHERE id=:id", new MapSqlParameterSource().addValue("id", termsAndRegAcceptance.getCustomer_id()));
-                }
+                    orderFulfiller.processTermsAccept(Integer.valueOf(termsAndRegAcceptance.getCustomer_id()));
+                    }
 
                 if(termsAndRegAcceptance.getFirst_registered() !=null){
                     LOGGER.trace("registered");
-                    jdbcInternalTemplate.update("UPDATE hubtest_agent.account SET registered=1 WHERE id=:id", new MapSqlParameterSource().addValue("id", termsAndRegAcceptance.getCustomer_id()));
+                    orderFulfiller.processRegistration(Integer.valueOf(termsAndRegAcceptance.getCustomer_id()));
                 }
 
-                if(checkAcceptance(termsAndRegAcceptance)){
+                if(orderFulfiller.checkAcceptance(termsAndRegAcceptance)){
                     LOGGER.trace("both accepted - generating order");
                     orderFulfiller.produceOrder(Integer.valueOf(termsAndRegAcceptance.getCustomer_id()));
-
                 }
-                */
-
-
-
             break;
 
         }
-
-
 
         return new ResponseEntity<Void>(HttpStatus.OK);
 
     }
 
-    private boolean checkAcceptance(TermsAndRegAcceptance termsAndRegAcceptance){
 
-        List<Map<String,Object>> rows = jdbcInternalTemplate.queryForList("SELECT * FROM hubtest_agent.account WHERE id=:id", new MapSqlParameterSource().addValue("id", termsAndRegAcceptance.getCustomer_id()));
-        boolean bothAccepted = false;
-        for(Map row : rows){
-            bothAccepted = (Boolean)row.get("registered") && (Boolean)row.get("terms_accepted");
-        }
-        return bothAccepted;
-    }
 
 
 

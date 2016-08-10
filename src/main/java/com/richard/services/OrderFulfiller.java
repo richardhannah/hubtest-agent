@@ -1,5 +1,6 @@
 package com.richard.services;
 
+import com.richard.dal.HubtestAgentDao;
 import com.richard.models.batchprocess.OrderFulfillment;
 import com.richard.models.batchprocess.TermsAndRegAcceptance;
 import org.apache.logging.log4j.LogManager;
@@ -24,27 +25,39 @@ public class OrderFulfiller {
     RestTemplate inthubRestTemplate;
 
     @Autowired
-    NamedParameterJdbcTemplate jdbcInternalTemplate;
+    HubtestAgentDao hubtestAgentDao;
+
+    @Autowired
+    ItemService itemService;
 
 
     public void produceOrder(int customerId){
 
         LOGGER.trace("producing order");
-
-
-        Thread thread = new Thread(new FulfillOrderRunnable(customerId,inthubRestTemplate,jdbcInternalTemplate));
+        Thread thread = new Thread(new FulfillOrderRunnable(customerId,inthubRestTemplate,hubtestAgentDao,itemService));
         thread.start();
-
-
-
 
     }
 
-    /*
+    public void processTermsAccept(int customerId){
+        hubtestAgentDao.processTermsAccept(customerId);
+    }
+
+    public void processRegistration(int customerId){
+        hubtestAgentDao.processRegistration(customerId);
+    }
+
+    public boolean checkAcceptance(TermsAndRegAcceptance termsAndRegAcceptance){
+
+        List<Map<String,Object>> rows = hubtestAgentDao.fetchCustomer(Integer.valueOf(termsAndRegAcceptance.getCustomer_id()));
+        boolean bothAccepted = false;
+        for(Map row : rows){
+            bothAccepted = (Boolean)row.get("registered") && (Boolean)row.get("terms_accepted");
+        }
+        return bothAccepted;
+    }
 
 
-
-     */
 
 
 }

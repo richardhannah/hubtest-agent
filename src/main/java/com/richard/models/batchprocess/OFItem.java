@@ -10,14 +10,6 @@ public class OFItem {
     private String quantity;
     private String itemDescription;
 
-    public OFItem(){
-        this.lineNo =1;
-        this.itemNo = "HUBIO10005";
-        this.quantity = "1";
-        this.itemDescription = "487:EVG2610";
-    }
-
-
     public int getLineNo() {
         return lineNo;
     }
@@ -50,14 +42,6 @@ public class OFItem {
         this.itemDescription = itemDescription;
     }
 
-    /* (non-Javadoc)
-     * @see java.lang.Object#toString()
-     */
-    @Override
-    public String toString() {
-        return "OFItem [lineNo=" + lineNo + ", itemNo=" + itemNo + ", quantity=" + quantity + ", itemDescription="
-                + itemDescription + "]";
-    }
 
 }
 

@@ -1,6 +1,7 @@
 package com.richard.configuration;
 
 import com.richard.services.BatchResponder;
+import com.richard.services.ItemService;
 import com.richard.services.OrderFulfiller;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,11 @@ public class BeanConfig {
     @Bean
     public OrderFulfiller orderFulfiller(){
         return new OrderFulfiller();
+    }
+
+    @Bean
+    public ItemService itemService(){
+        return new ItemService();
     }
 
 

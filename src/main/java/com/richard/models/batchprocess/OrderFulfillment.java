@@ -23,56 +23,7 @@ public class OrderFulfillment {
     private String action;
     private String carrier_program;
 
-    private BatchTransaction batchTransaction;
-
-
     public OrderFulfillment() {}
-
-    public OrderFulfillment(BatchTransaction batchTransaction){
-        this.batchTransaction =batchTransaction;
-        this.fake = true;
-        this.env = "SB2";
-        this.orderNo = "";
-        this.soldToName = batchTransaction.getContact().getFirst_name() + " " +batchTransaction.getContact().getLast_name();
-        this.soldToAddr1 = batchTransaction.getContact().getAddr1();
-        this.soldToAddr2 = batchTransaction.getContact().getAddr2();
-        this.soldToAddr3 = "";
-        this.soldToCity = batchTransaction.getContact().getCity();
-        this.soldToState = batchTransaction.getContact().getState();
-        this.soldToCountry = "US";
-        this.soldToZip = batchTransaction.getContact().getZip();
-        this.soldToPhone = batchTransaction.getContact().getMain_phone();
-        this.shipVia = "469";
-        this.action = "order_device";
-        this.carrier_program = batchTransaction.getPartner();
-
-        this.vehicles = new ArrayList<>();
-        this.vehicles.add(new OFVehicle(batchTransaction));
-
-
-
-    }
-
-    public OrderFulfillment(OrderFulfillment of, List<OFVehicle> vehicles) {
-        this.fake = of.fake;
-        this.env = of.env;
-        this.orderNo = of.orderNo;
-        this.soldToName = of.soldToName;
-        this.soldToAddr1 = of.soldToAddr1;
-        this.soldToAddr2 = of.soldToAddr2;
-        this.soldToAddr3 = of.soldToAddr3;
-        this.soldToCity = of.soldToCity;
-        this.soldToState = of.soldToState;
-        this.soldToZip = of.soldToZip;
-        this.soldToPhone = of.soldToPhone;
-        this.shipVia = of.shipVia;
-        this.action = of.action;
-        this.vehicles = vehicles;
-    }
-
-    public BatchTransaction getBatchTransaction(){
-        return this.batchTransaction;
-    }
 
     public String getSoldToCountry() {
         return soldToCountry;
@@ -89,10 +40,6 @@ public class OrderFulfillment {
     public void setCarrier_program(String carrier_program) {
         this.carrier_program = carrier_program;
     }
-
-    //public boolean isVehicleUpdate() {
-    //    return "update_vehicle".equalsIgnoreCase(action);
-    //}
 
     public String getOrderNo() {
         return orderNo;
@@ -206,11 +153,4 @@ public class OrderFulfillment {
         this.action = action;
     }
 
-    @Override
-    public String toString() {
-        return "OrderFulfillment [fake=" + fake + ", env=" + env + ", orderNo=" + orderNo + ", soldToName=" + soldToName + ", soldToAddr1="
-                + soldToAddr1 + ", soldToAddr2=" + soldToAddr2 + ", soldToCity=" + soldToCity + ", soldToState=" + soldToState
-                + ", soldToZip=" + soldToZip + ", soldToPhone=" + soldToPhone + ", shipVia=" + shipVia + ", vehicles="
-                + vehicles + "]";
-    }
 }
