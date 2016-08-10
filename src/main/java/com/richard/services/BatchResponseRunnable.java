@@ -3,6 +3,7 @@ package com.richard.services;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.richard.dal.HubtestAgentDao;
 import com.richard.models.batchprocess.BatchResponse;
 import com.richard.models.batchprocess.BatchTransaction;
 import org.apache.logging.log4j.LogManager;
@@ -15,7 +16,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import com.richard.utils.Thread;
+import com.richard.utils.Tools;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -32,10 +33,10 @@ public class BatchResponseRunnable implements Runnable {
 
 
     private static Logger LOGGER = LogManager.getLogger(BatchResponseRunnable.class);
-    private @Value("${inthub.url}")String inthubUrl;
+
 
     RestTemplate inthubRestTemplate;
-    NamedParameterJdbcTemplate jdbcInternalTemplate;
+    HubtestAgentDao hubtestAgentDao;
     List<BatchTransaction> batchTransactions;
     ObjectMapper mapper;
     List<BatchResponse> batchResponses = new ArrayList<>();
@@ -44,10 +45,10 @@ public class BatchResponseRunnable implements Runnable {
 
     public BatchResponseRunnable(){}
 
-    public BatchResponseRunnable(List<BatchTransaction> batchTransactions,RestTemplate inthubRestTemplate, NamedParameterJdbcTemplate jdbcInternalTemplate){
+    public BatchResponseRunnable(List<BatchTransaction> batchTransactions,RestTemplate inthubRestTemplate, HubtestAgentDao hubtestAgentDao){
         this.batchTransactions = batchTransactions;
         this.inthubRestTemplate=inthubRestTemplate;
-        this.jdbcInternalTemplate=jdbcInternalTemplate;
+        this.hubtestAgentDao=hubtestAgentDao;
     }
 
     @Override
@@ -58,29 +59,23 @@ public class BatchResponseRunnable implements Runnable {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         persistBatch();
-        Thread.wait(5000);
+        createCustomersAndVehicles(batchTransactions);
+        Tools.wait(5000);
         generateBatchResponse();
         sendBatchResponse();
-        Thread.wait(20000);
+        Tools.wait(20000);
         sendRegistration();
-        Thread.wait(5000);
+        Tools.wait(5000);
         sendAcceptTerms();
-        Thread.wait(20000);
-
-
     }
 
 
 
 
-    private String NSIDBuilder(String partnerId){
-
-
-        int accountId = jdbcInternalTemplate.queryForObject("SELECT id FROM hubtest_agent.account order by id desc limit 1;",new MapSqlParameterSource(), Integer.class);
-        int vehicleId = jdbcInternalTemplate.queryForObject("SELECT id FROM hubtest_agent.account order by id desc limit 1;",new MapSqlParameterSource(), Integer.class);
-
-
-        return accountId+":"+partnerId+":"+vehicleId;
+    private String NSIDBuilder(BatchTransaction batchTransaction,BatchTransaction.Vehicle vehicle){
+        int accountId = hubtestAgentDao.fetchCustomerByAcctNo(Integer.valueOf(batchTransaction.getCustomer().getAccount_no()));
+        int vehicleId = hubtestAgentDao.fetchVehicleIdByIhid(vehicle.getIHID());
+        return accountId+":"+batchTransaction.getPartner()+":"+vehicleId;
     }
 
     private String nsidFromSharedAcctId(String sharedAcctId){
@@ -90,65 +85,47 @@ public class BatchResponseRunnable implements Runnable {
 
     }
 
-
-
-    private String serialize(Object obj) {
-
-        String response = "";
-        try {
-            response = mapper.writeValueAsString(obj);
-        }
-        catch (Exception ex){}
-
-        return response;
-    }
-
-
     private void generateBatchResponse(){
         for (BatchTransaction transaction : batchTransactions ) {
 
-            BatchResponse response = new BatchResponse();
-            response.setGPID(transaction.getGPID());
-            response.setIHID(transaction.getVehicles().get(0).getIHID());
-            response.setNSID(NSIDBuilder(transaction.getPartner()));
-            response.setBTID(Integer.parseInt(transaction.getBTID()));
-            response.setErrorCode(0);
-            response.setPartner_id(transaction.getPartner());
+            for(BatchTransaction.Vehicle vehicle : transaction.getVehicles()){
+                BatchResponse response = new BatchResponse();
+                response.setGPID(transaction.getGPID());
+                response.setIHID(vehicle.getIHID());
+                response.setNSID(NSIDBuilder(transaction,vehicle));
+                response.setBTID(Integer.parseInt(transaction.getBTID()));
+                response.setErrorCode(0);
+                response.setPartner_id(transaction.getPartner());
 
-            batchResponses.add(response);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss");
 
+                Map<String,String> acceptTerms = new HashMap<>();
+                acceptTerms.put("accepted_tcs", LocalDateTime.now().format(formatter).toString() + " BST");
+                acceptTerms.put("customer_id", nsidFromSharedAcctId(response.getNSID()));
+                termsAcceptList.add(acceptTerms);
 
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss");
+                Map<String,String> registration = new HashMap<>();
+                registration.put("first_registered",LocalDateTime.now().format(formatter).toString() + " BST");
+                registration.put("customer_id", nsidFromSharedAcctId(response.getNSID()));
+                regList.add(registration);
 
-            Map<String,String> acceptTerms = new HashMap<>();
-            acceptTerms.put("accepted_tcs", LocalDateTime.now().format(formatter).toString() + " BST");
-            acceptTerms.put("customer_id", nsidFromSharedAcctId(response.getNSID()));
-            termsAcceptList.add(acceptTerms);
+                batchResponses.add(response);
 
-            Map<String,String> registration = new HashMap<>();
-            registration.put("first_registered",LocalDateTime.now().format(formatter).toString() + " BST");
-            registration.put("customer_id", nsidFromSharedAcctId(response.getNSID()));
-            regList.add(registration);
+            }
 
         }
 
     }
 
     private void sendBatchResponse(){
-        String json = "";
-        LOGGER.trace("Sending response: " + json);
-        try {
-            json = mapper.writeValueAsString(batchResponses);
-        } catch (Exception ex) {
-            LOGGER.error("Failed to Serialize object");
-        }
-        String resp = inthubRestTemplate.postForObject("http://localhost:8080/Integration-Hub/br/upload", batchResponses,String.class);
+        LOGGER.debug("sending response : " + Tools.serialize(batchResponses));
+        String resp = inthubRestTemplate.postForObject("http://localhost:8080/Integration-Hub/br/upload", Tools.serialize(batchResponses),String.class);
     }
 
     private void sendRegistration(){
 
         for(Map<String,String> registration : regList) {
-            LOGGER.trace("sending registration : " + serialize(registration));
+            LOGGER.debug("sending registration : " + Tools.serialize(registration));
             ResponseEntity<String> resp = inthubRestTemplate.postForEntity("http://localhost:8080/Integration-Hub/mda/user_registration/sandbox", registration, String.class);
             LOGGER.trace("registration response : " + resp.getBody());
         }
@@ -157,43 +134,27 @@ public class BatchResponseRunnable implements Runnable {
     private void sendAcceptTerms(){
 
         for(Map<String,String> termsAccept : termsAcceptList) {
-            LOGGER.trace("sending accept terms : " + serialize(termsAccept));
+            LOGGER.debug("sending accept terms : " + Tools.serialize(termsAccept));
             ResponseEntity<String> resp = inthubRestTemplate.postForEntity("http://localhost:8080/Integration-Hub/mda/terms_acceptance/sandbox", termsAccept, String.class);
             LOGGER.trace("accept terms response : " + resp.getBody());
+        }
+    }
+
+    private void createCustomersAndVehicles(List<BatchTransaction> batchTransactions){
+
+        for(BatchTransaction batchTransaction : batchTransactions){
+            int customerId = hubtestAgentDao.createCustomer(batchTransaction);
+            LOGGER.trace("netsuite customer id generated : " + customerId);
+            for(BatchTransaction.Vehicle vehicle : batchTransaction.getVehicles()){
+                hubtestAgentDao.createVehicle(customerId,vehicle);
+            }
         }
     }
 
     private void persistBatch(){
 
         for(BatchTransaction batchTransaction : batchTransactions){
-
-            String json = "";
-            try{
-                json = mapper.writeValueAsString(batchTransaction);
-            }
-            catch (Exception ex){
-                LOGGER.error("failed to serialise", ex);
-            }
-
-            MapSqlParameterSource accountParams = new MapSqlParameterSource();
-            accountParams.addValue("json",json);
-            accountParams.addValue("carrier_account_no",batchTransaction.getCustomer().getAccount_no());
-            KeyHolder keyHolder = new GeneratedKeyHolder();
-            jdbcInternalTemplate.update("INSERT into hubtest_agent.account (raw,carrier_account_no) values (:json,:carrier_account_no)", accountParams,keyHolder);
-            LOGGER.trace("new netsuite id generated : " + keyHolder.getKey());
-            MapSqlParameterSource vehParams = new MapSqlParameterSource();
-            vehParams.addValue("json",json);
-            vehParams.addValue("account_id",keyHolder.getKey());
-            jdbcInternalTemplate.update("INSERT into hubtest_agent.vehicle (raw,account_id) values (:json,:account_id)", vehParams);
-
+            hubtestAgentDao.saveTransaction(batchTransaction);
         }
-
-
-
     }
-
-
-
-
-
 }

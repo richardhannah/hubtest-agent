@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.richard.Application;
+import com.richard.dal.HubtestAgentDao;
 import com.richard.models.batchprocess.BatchResponse;
 import com.richard.models.batchprocess.BatchTransaction;
 import org.apache.logging.log4j.LogManager;
@@ -28,11 +29,11 @@ public class BatchResponder {
     RestTemplate inthubRestTemplate;
 
     @Autowired
-    NamedParameterJdbcTemplate jdbcInternalTemplate;
+    HubtestAgentDao hubtestAgentDao;
 
     public void ProduceBatchResponse(List<BatchTransaction> batchTransactions){
 
-    Thread thread = new Thread(new BatchResponseRunnable(batchTransactions,inthubRestTemplate,jdbcInternalTemplate));
+    Thread thread = new Thread(new BatchResponseRunnable(batchTransactions,inthubRestTemplate,hubtestAgentDao));
         thread.start();
 
     }

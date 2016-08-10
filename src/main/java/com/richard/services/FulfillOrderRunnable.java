@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.richard.models.batchprocess.BatchTransaction;
-import com.richard.models.batchprocess.OFItem;
-import com.richard.models.batchprocess.OFVehicle;
 import com.richard.models.batchprocess.OrderFulfillment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,9 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.web.client.RestTemplate;
-import com.richard.utils.Thread;
+import com.richard.utils.Tools;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,7 +52,7 @@ public class FulfillOrderRunnable implements Runnable {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         batchTransaction = fetchBatchTransaction(customerId);
 
-        Thread.wait(5000);
+        Tools.wait(5000);
         OrderFulfillment orderFulfillment = new OrderFulfillment(batchTransaction);
         persistOrder(orderFulfillment);
         String orderId = generateOrderId(orderFulfillment);

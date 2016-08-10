@@ -1,5 +1,6 @@
 package com.richard.configuration;
 
+import com.richard.dal.HubtestAgentDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
@@ -35,6 +36,11 @@ public class DataSourceConfig {
     @Bean
     public NamedParameterJdbcTemplate jdbcInternalTemplate() throws PropertyVetoException {
         return new NamedParameterJdbcTemplate(internalDataSource);
+    }
+
+    @Bean
+    public HubtestAgentDao hubtestAgentDao(){
+        return new HubtestAgentDao();
     }
 
 

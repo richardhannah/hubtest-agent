@@ -86,6 +86,7 @@ public class ErpController {
                     LOGGER.error("Failed to Deserialize object");
                 }
 
+                /*
                 if(termsAndRegAcceptance.getAccepted_tcs() != null){
                     LOGGER.trace("terms and conditions accepted");
                     jdbcInternalTemplate.update("UPDATE hubtest_agent.account SET terms_accepted=1 WHERE id=:id", new MapSqlParameterSource().addValue("id", termsAndRegAcceptance.getCustomer_id()));
@@ -101,6 +102,7 @@ public class ErpController {
                     orderFulfiller.produceOrder(Integer.valueOf(termsAndRegAcceptance.getCustomer_id()));
 
                 }
+                */
 
 
 
