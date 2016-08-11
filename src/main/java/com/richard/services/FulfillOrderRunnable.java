@@ -4,13 +4,14 @@ package com.richard.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.richard.dal.HubtestAgentDao;
 import com.richard.models.batchprocess.BatchTransaction;
-import com.richard.models.batchprocess.OrderFactory;
+import com.richard.models.batchprocess.OrderBuilder;
+import com.richard.models.batchprocess.OrderFulfillment;
 import com.richard.utils.Tools;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -45,17 +46,21 @@ public class FulfillOrderRunnable implements Runnable {
     @Override
     public void run() {
         LOGGER.trace("fulfill order thread started");
-        OrderFactory orderFactory = new OrderFactory(customerId);
+        OrderBuilder orderBuilder = new OrderBuilder(customerId);
         List<Map<String,Object>> vehicleRows = hubtestAgentDao.fetchVehiclesWithOrdersToBeSent(customerId);
-
+        List<OrderFulfillment> fulfillmentList = new ArrayList<>();
 
         for(Map<String,Object> vehicleRow : vehicleRows){
-            orderFactory.setOrderReference(newOrder());
-            orderFactory.setOfItem(itemService.retrieveItem());
-            orderFactory.setVehicle(reconstructVehicle(vehicleRow));
-            orderFactory.setVehicleReference((Integer)vehicleRow.get("id"));
+            orderBuilder.setOrderReference(newOrder());
+            orderBuilder.setOfItem(itemService.retrieveItem());
+            orderBuilder.setVehicle(reconstructVehicle(vehicleRow));
+            orderBuilder.setVehicleReference((Integer)vehicleRow.get("id"));
+            orderBuilder.setBatchTransaction(batchTransaction(customerId));
+            fulfillmentList.add(orderBuilder.getOrderFulfillment());
         }
-        LOGGER.trace(Tools.serialize(orderFactory.getOrderFulfillment()));
+        LOGGER.trace(Tools.serialize(fulfillmentList));
+        String resp = inthubRestTemplate.postForObject("http://localhost:8080/Integration-Hub/tpl/placeorder/tpl1", Tools.serialize(fulfillmentList),String.class);
+        LOGGER.trace(resp);
     }
 
     private int newOrder(){
@@ -74,8 +79,17 @@ public class FulfillOrderRunnable implements Runnable {
         return vehicle;
     }
 
-    private BatchTransaction.Contact reconstructContact(String contactJson){
+    private BatchTransaction batchTransaction(int customerId){
+        BatchTransaction batchTransaction = null;
+        ObjectMapper mapper = new ObjectMapper();
+        try{
+            batchTransaction = mapper.readValue(hubtestAgentDao.fetchBatchTransaction(customerId),BatchTransaction.class);
+        }
+        catch (Exception ex){
+            LOGGER.trace(ex);
+        }
 
+        return batchTransaction;
     }
 
 }

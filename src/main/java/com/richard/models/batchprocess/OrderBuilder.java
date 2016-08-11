@@ -1,21 +1,24 @@
 package com.richard.models.batchprocess;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by richard on 10/08/2016.
  */
-public class OrderFactory {
+public class OrderBuilder {
 
     private int orderReference;
     private String orderNo;
     private OFItem ofItem;
     private BatchTransaction.Vehicle vehicle;
     private int vehicleReference;
-    private BatchTransaction.Contact contact;
+    private BatchTransaction batchTransaction;
 
-    public OrderFactory(int orderReference){
+
+    public OrderBuilder(int orderReference){
         this.orderReference=orderReference;
     }
 
@@ -36,7 +39,7 @@ public class OrderFactory {
         orderFulfillment.setSoldToCity(vehicle.getCity());
         orderFulfillment.setSoldToState(vehicle.getState());
         orderFulfillment.setSoldToZip(vehicle.getZip());
-        orderFulfillment.setSoldToPhone(contact.getMain_phone());
+        orderFulfillment.setSoldToPhone(batchTransaction.getContact().getMain_phone());
         orderFulfillment.setSoldToCountry(vehicle.getCountry());
         orderFulfillment.setShipVia("469");
         orderFulfillment.setAction("order_device");
@@ -45,8 +48,8 @@ public class OrderFactory {
         return orderFulfillment;
     }
 
-    public void setContact(BatchTransaction.Contact contact){
-        this.contact=contact;
+    public void setBatchTransaction(BatchTransaction batchTransaction){
+        this.batchTransaction=batchTransaction;
     }
 
     public void setOrderReference(int orderReference) {
@@ -92,6 +95,8 @@ public class OrderFactory {
         ofVehicle.getItems().add(ofItem);
         return ofVehicle;
     }
+
+
 
 
 }

@@ -94,8 +94,9 @@ public class HubtestAgentDao {
         return keyHolder.getKey().intValue();
     }
 
-    public String getCustomerRaw(){
-        re
+    public String fetchBatchTransaction(int customerId){
+        return jdbcInternalTemplate.queryForObject(SELECT_CUSTOMER_RAW,new MapSqlParameterSource().addValue("id",customerId),String.class);
     }
+
 
 }
